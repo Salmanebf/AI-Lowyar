@@ -1,0 +1,5 @@
+settings.local.json
+*.local.md
+*.local.json
+/cache/
+/agent-memory/
