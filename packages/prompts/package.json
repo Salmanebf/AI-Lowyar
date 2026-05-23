@@ -1,0 +1,14 @@
+{
+  "name": "@morolex/prompts",
+  "version": "0.0.1",
+  "private": true,
+  "main": "./loader.ts",
+  "scripts": {
+    "test": "vitest run",
+    "test:watch": "vitest"
+  },
+  "devDependencies": {
+    "typescript": "^5.7.3",
+    "vitest": "^2.1.8"
+  }
+}
