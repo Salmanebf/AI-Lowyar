@@ -8,6 +8,14 @@ const dictionaries: Record<Locale, () => Promise<Record<string, unknown>>> = {
   ar: () => import('./ar.json').then((m) => m.default),
 };
 
+export function isValidLocale(value: string): value is Locale {
+  return locales.includes(value as Locale);
+}
+
 export async function getDictionary(locale: Locale) {
-  return dictionaries[locale]() as Promise<{ home: { title: string } }>;
+  const loader = dictionaries[locale];
+  if (!loader) {
+    return dictionaries[defaultLocale]() as Promise<{ home: { title: string } }>;
+  }
+  return loader() as Promise<{ home: { title: string } }>;
 }

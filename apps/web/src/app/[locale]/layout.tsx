@@ -1,4 +1,5 @@
-import { locales, type Locale } from '@/lib/i18n';
+import { notFound } from 'next/navigation';
+import { locales, isValidLocale, type Locale } from '@/lib/i18n';
 import { LocaleAttrs } from '@/components/locale-attrs';
 
 type Props = {
@@ -11,6 +12,10 @@ export function generateStaticParams() {
 }
 
 export default function LocaleLayout({ children, params }: Props) {
+  if (!isValidLocale(params.locale)) {
+    notFound();
+  }
+
   return (
     <>
       <LocaleAttrs locale={params.locale} />
