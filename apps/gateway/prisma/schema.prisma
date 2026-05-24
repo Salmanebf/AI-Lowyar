@@ -6,3 +6,111 @@ datasource db {
   provider = "postgresql"
   url      = env("DATABASE_URL")
 }
+
+// ─── Users ───────────────────────────────────────────────────────────
+
+model User {
+  id             String         @id @default(uuid()) @db.Uuid
+  email          String?        @unique
+  telegramId     String?        @unique @map("telegram_id")
+  displayName    String?        @map("display_name")
+  preferredLang  String         @default("fr") @map("preferred_lang") @db.VarChar(5)
+  plan           String         @default("free") @db.VarChar(20)
+  passwordHash   String?        @map("password_hash")
+  createdAt      DateTime       @default(now()) @map("created_at") @db.Timestamptz
+  updatedAt      DateTime       @updatedAt @map("updated_at") @db.Timestamptz
+
+  conversations  Conversation[]
+  usageLogs      UsageLog[]
+
+  @@map("users")
+}
+
+// ─── Conversations ───────────────────────────────────────────────────
+
+model Conversation {
+  id        String    @id @default(uuid()) @db.Uuid
+  userId    String    @map("user_id") @db.Uuid
+  title     String?
+  channel   String    @default("web") @db.VarChar(20)
+  createdAt DateTime  @default(now()) @map("created_at") @db.Timestamptz
+  updatedAt DateTime  @updatedAt @map("updated_at") @db.Timestamptz
+
+  user      User      @relation(fields: [userId], references: [id], onDelete: Cascade)
+  messages  Message[]
+
+  @@index([userId])
+  @@map("conversations")
+}
+
+// ─── Messages ────────────────────────────────────────────────────────
+
+model Message {
+  id             String    @id @default(uuid()) @db.Uuid
+  conversationId String    @map("conversation_id") @db.Uuid
+  role           String    @db.VarChar(20)
+  content        String
+  citations      Json?     @db.JsonB
+  tokensIn       Int?      @map("tokens_in")
+  tokensOut      Int?      @map("tokens_out")
+  createdAt      DateTime  @default(now()) @map("created_at") @db.Timestamptz
+
+  conversation   Conversation @relation(fields: [conversationId], references: [id], onDelete: Cascade)
+  feedback       Feedback[]
+
+  @@index([conversationId])
+  @@map("messages")
+}
+
+// ─── Feedback ────────────────────────────────────────────────────────
+
+model Feedback {
+  id        String   @id @default(uuid()) @db.Uuid
+  messageId String   @map("message_id") @db.Uuid
+  rating    Int      @db.SmallInt
+  comment   String?
+  createdAt DateTime @default(now()) @map("created_at") @db.Timestamptz
+
+  message   Message  @relation(fields: [messageId], references: [id], onDelete: Cascade)
+
+  @@index([messageId])
+  @@map("feedback")
+}
+
+// ─── Legal Documents ─────────────────────────────────────────────────
+
+model LegalDocument {
+  id            String   @id @default(uuid()) @db.Uuid
+  code          String   @db.VarChar(100)
+  articleNumber String?  @map("article_number") @db.VarChar(50)
+  title         String?
+  bodyFr        String?  @map("body_fr")
+  bodyAr        String?  @map("body_ar")
+  language      String   @db.VarChar(5)
+  versionDate   DateTime @map("version_date") @db.Date
+  sourceUrl     String?  @map("source_url")
+  isCurrent     Boolean  @default(true) @map("is_current")
+  createdAt     DateTime @default(now()) @map("created_at") @db.Timestamptz
+
+  @@index([code, articleNumber])
+  @@index([isCurrent])
+  @@map("legal_documents")
+}
+
+// ─── Usage Logs ──────────────────────────────────────────────────────
+
+model UsageLog {
+  id        String   @id @default(uuid()) @db.Uuid
+  userId    String   @map("user_id") @db.Uuid
+  action    String   @db.VarChar(50)
+  tokensIn  Int      @default(0) @map("tokens_in")
+  tokensOut Int      @default(0) @map("tokens_out")
+  model     String?  @db.VarChar(50)
+  createdAt DateTime @default(now()) @map("created_at") @db.Timestamptz
+
+  user      User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@index([userId])
+  @@index([createdAt])
+  @@map("usage_logs")
+}
