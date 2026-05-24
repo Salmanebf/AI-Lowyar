@@ -3,6 +3,7 @@ const GATEWAY_URL = process.env.NEXT_PUBLIC_GATEWAY_URL ?? 'http://localhost:300
 export async function gatewayFetch<T>(path: string, init?: RequestInit): Promise<T> {
   const res = await fetch(`${GATEWAY_URL}${path}`, {
     ...init,
+    cache: 'no-store',
     headers: {
       'Content-Type': 'application/json',
       ...init?.headers,
