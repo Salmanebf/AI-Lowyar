@@ -5,17 +5,27 @@ You are working on **MoroLex**, a specialized legal AI assistant for Moroccan la
 ## Architecture (CRITICAL — read before any cross-service change)
 
 Three apps in a monorepo:
-- `apps/web/` — Next.js 14+ App Router, Tailwind, shadcn/ui. Chat UI. Streams SSE.
-- `apps/gateway/` — NestJS (TypeScript). Auth, billing, rate limits, Telegram bot, conversation persistence. Calls AI service over internal HTTP.
+- `apps/web/` — Next.js 14 App Router, Tailwind, shadcn/ui. Chat UI. i18n (fr/ar) via `[locale]` routing. Streams SSE.
+- `apps/gateway/` — NestJS (TypeScript). Auth, billing, rate limits, Telegram bot, conversation persistence. Prisma for Postgres. Calls AI service via `AiServiceClient`.
 - `apps/ai-service/` — Python 3.11+ FastAPI + LangGraph. RAG, prompt building, LLM calls. NEVER add business logic here.
+
+Shared packages:
+- `packages/shared-types/` — Cross-service TypeScript types.
+- `packages/prompts/` — Versioned prompt `.md` files + dual loaders (`loader.ts`, `loader.py`). `{{var}}` substitution. `meta.json` per prompt controls current version.
 
 Data layer:
 - Postgres 16 (users, conversations, messages, feedback, legal_documents)
 - Qdrant (vector store for legal corpus, collection: `legal_corpus`)
 - Redis (cache + queues + rate-limit counters)
 
+Infra:
+- `infra/docker-compose.yml` — Postgres, Qdrant, Redis with healthchecks and persistent volumes.
+- `.env.example` — all env vars with placeholder values.
+
 Ingestion (separate pipeline, not a service):
 - `ingestion/` — scrapers → parsers → normalizer → chunker → embedder → Qdrant
+
+Health check chain: Web `/api/health` → Gateway `/health` (checks Postgres + AI service) → AI Service `/health` (checks Qdrant).
 
 ## Hard rules
 
@@ -28,6 +38,7 @@ Ingestion (separate pipeline, not a service):
 7. **Streaming is the default** for chat endpoints (SSE end-to-end).
 8. **Legal corpus is versioned.** When a law changes, keep history. Never delete `legal_documents` rows; set `is_current=false`.
 9. **Loi 28-08 compliance.** Every assistant response carries a disclaimer. Never frame output as "legal advice."
+10. **NestJS DI in tests.** Use explicit `@Inject()` decorators on constructor params — Vitest's esbuild strips `emitDecoratorMetadata`.
 
 ## Stack at-a-glance
 
@@ -46,6 +57,12 @@ Ingestion (separate pipeline, not a service):
 ## Languages in the product (not code)
 
 User-facing content is **French and Arabic**. When generating example data, fixtures, prompts, or test cases, use realistic legal French/Arabic — not English placeholders.
+
+## Documentation
+
+- `README.md` — project overview, quick start, architecture, current status.
+- `GETTING-STARTED.md` — step-by-step setup guide for new developers.
+- `docs/SPECIFICATIONS.md` — full product specification and roadmap.
 
 ## When unsure
 
